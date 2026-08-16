@@ -16,16 +16,18 @@ A Lovable-style builder that runs 100% in the browser from GitHub Pages, powered
  site live at  https://<you>.github.io/<site-name>/
 ```
 
-No server, no Lovable backend, no paid service. Everything runs client-side; GitHub Actions only builds/deploys the sites you publish.
+With Server and  Lovable backend if needed , no paid service. Everything runs client-side if needed lovable used; GitHub Actions only builds/deploys the sites you publish.
 
 ## Core pieces
 
 **1. Key setup screen**
+
 - First open shows a one-field screen: paste Gemini API key.
 - Stored in browser localStorage only, never sent anywhere except Google's API.
 - Model: `gemini-2.5-flash` by default (best free-tier quota), with a switch to `gemini-2.5-pro` for hard builds. Auto-fallback when the free rate limit hits.
 
 **2. The agent loop (this is what makes it feel like Lovable)**
+
 - System prompt defining a builder agent with strict output format.
 - Agent replies with tool calls, not raw text:
   - `write_file(path, content)`
@@ -38,12 +40,14 @@ No server, no Lovable backend, no paid service. Everything runs client-side; Git
 - Auto-repair pass: preview console/runtime errors get fed back to the model for one automatic fix attempt.
 
 **3. Three output modes, chosen by the agent**
+
 - Single-file HTML + Tailwind CDN + vanilla JS → landing pages, games, tools, instant preview.
 - Multi-file static HTML/CSS/JS → multi-page sites with real routing.
 - Multi-file React → bundled in-browser with esbuild-wasm, for app-like projects.
 The agent picks the mode from the prompt; you can override it.
 
 **4. Editor UI**
+
 - Left: chat with the agent, with streaming and edit history.
 - Middle: file tree + code editor (CodeMirror), editable by hand — your manual edits are kept and shown to the agent on the next turn.
 - Right: live iframe preview with device sizes (mobile/tablet/desktop), console panel, refresh.
@@ -51,6 +55,7 @@ The agent picks the mode from the prompt; you can override it.
 - Templates gallery to start from: SaaS landing, portfolio, blog, dashboard, e-commerce, restaurant, game, docs, form/tool.
 
 **5. Publishing (free hosting for every generated site)**
+
 - Preview: instant, in-browser, no publish needed.
 - Download: ZIP of the project.
 - Publish: you connect a GitHub personal access token once (stored in browser). Publish then:

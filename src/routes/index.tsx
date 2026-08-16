@@ -1,24 +1,73 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { KeyGate } from "@/components/builder/KeyGate";
+import { Launcher } from "@/components/builder/Launcher";
+import { SettingsDialog } from "@/components/builder/SettingsDialog";
+import { Workbench } from "@/components/builder/Workbench";
+import { runAgent } from "@/lib/builder/agent";
+import type { BuildMode } from "@/lib/builder/prompt";
+import { useActiveProject, useBuilder } from "@/lib/builder/store";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Atlas — Prompt to website, published free on GitHub Pages" },
+      {
+        name: "description",
+        content:
+          "Describe a website and Atlas builds it with your own Gemini key: live preview, editable code, and one-click publishing to GitHub Pages.",
+      },
+      { property: "og:title", content: "Atlas — Prompt to website" },
+      {
+        property: "og:description",
+        content:
+          "An AI website builder that runs in your browser on your Gemini key and publishes to your GitHub Pages for free.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const [mounted, setMounted] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const apiKey = useBuilder((s) => s.apiKey);
+  const createProject = useBuilder((s) => s.createProject);
+  const selectProject = useBuilder((s) => s.selectProject);
+  const project = useActiveProject();
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="hero-glow grid min-h-screen place-items-center">
+        <p className="text-sm text-muted-foreground">Loading Atlas…</p>
+      </div>
+    );
+  }
+
+  if (!apiKey) return <KeyGate />;
+
+  const start = (prompt: string, mode: BuildMode) => {
+    const name = (prompt.split(/[.!?\n]/)[0] ?? "").slice(0, 42) || "New site";
+    createProject(name, mode);
+    void runAgent({ instruction: prompt });
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      {project ? (
+        <Workbench
+          project={project}
+          onHome={() => selectProject("")}
+          onSettings={() => setSettingsOpen(true)}
+        />
+      ) : (
+        <Launcher onStart={start} onSettings={() => setSettingsOpen(true)} />
+      )}
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </>
   );
 }
