@@ -6,7 +6,7 @@ import { SettingsDialog } from "@/components/builder/SettingsDialog";
 import { Workbench } from "@/components/builder/Workbench";
 import { runAgent } from "@/lib/builder/agent";
 import type { BuildMode } from "@/lib/builder/prompt";
-import { useActiveProject, useBuilder } from "@/lib/builder/store";
+import { useActiveProject, useBuilder, useReady } from "@/lib/builder/store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [mounted, setMounted] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const apiKey = useBuilder((s) => s.apiKey);
+  const ready = useReady();
   const createProject = useBuilder((s) => s.createProject);
   const selectProject = useBuilder((s) => s.selectProject);
   const project = useActiveProject();
@@ -48,7 +48,7 @@ function Index() {
     );
   }
 
-  if (!apiKey) return <KeyGate />;
+  if (!ready) return <KeyGate />;
 
   const start = (prompt: string, mode: BuildMode) => {
     const name = (prompt.split(/[.!?\n]/)[0] ?? "").slice(0, 42) || "New site";

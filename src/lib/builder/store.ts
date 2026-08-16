@@ -32,7 +32,15 @@ export interface Project {
   publishedUrl?: string | undefined;
 }
 
+export type Provider = "atlas" | "gemini";
+export type PublishTarget = "hub" | "repo";
+
 interface BuilderState {
+  onboarded: boolean;
+  provider: Provider;
+  backendUrl: string;
+  publishTarget: PublishTarget;
+  hubDomain: string;
   apiKey: string;
   model: string;
   githubToken: string;
@@ -41,6 +49,11 @@ interface BuilderState {
   activeId: string | null;
   activeFile: string | null;
 
+  setOnboarded: (v: boolean) => void;
+  setProvider: (provider: Provider) => void;
+  setBackendUrl: (url: string) => void;
+  setPublishTarget: (target: PublishTarget) => void;
+  setHubDomain: (domain: string) => void;
   setKey: (key: string) => void;
   setModel: (model: string) => void;
   setGithub: (token: string, user: string) => void;
@@ -76,6 +89,11 @@ function updateActive(state: BuilderState, fn: (p: Project) => Project): Partial
 export const useBuilder = create<BuilderState>()(
   persist(
     (set, get) => ({
+      onboarded: false,
+      provider: "atlas",
+      backendUrl: "",
+      publishTarget: "hub",
+      hubDomain: "",
       apiKey: "",
       model: "gemini-2.5-flash",
       githubToken: "",
@@ -84,6 +102,11 @@ export const useBuilder = create<BuilderState>()(
       activeId: null,
       activeFile: null,
 
+      setOnboarded: (onboarded) => set({ onboarded }),
+      setProvider: (provider) => set({ provider }),
+      setBackendUrl: (backendUrl) => set({ backendUrl }),
+      setPublishTarget: (publishTarget) => set({ publishTarget }),
+      setHubDomain: (hubDomain) => set({ hubDomain }),
       setKey: (apiKey) => set({ apiKey }),
       setModel: (model) => set({ model }),
       setGithub: (githubToken, githubUser) => set({ githubToken, githubUser }),
@@ -201,6 +224,11 @@ export const useBuilder = create<BuilderState>()(
     {
       name: "atlas-builder",
       partialize: (s) => ({
+        onboarded: s.onboarded,
+        provider: s.provider,
+        backendUrl: s.backendUrl,
+        publishTarget: s.publishTarget,
+        hubDomain: s.hubDomain,
         apiKey: s.apiKey,
         model: s.model,
         githubToken: s.githubToken,
@@ -211,6 +239,10 @@ export const useBuilder = create<BuilderState>()(
     },
   ),
 );
+
+export function useReady(): boolean {
+  return useBuilder((s) => s.onboarded || Boolean(s.apiKey));
+}
 
 export function useActiveProject(): Project | null {
   return useBuilder((s) => s.projects.find((p) => p.id === s.activeId) ?? null);
