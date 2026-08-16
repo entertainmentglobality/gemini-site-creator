@@ -51,7 +51,7 @@ function Index() {
   if (!apiKey) return <KeyGate />;
 
   const start = (prompt: string, mode: BuildMode) => {
-    const name = prompt.split(/[.!?\n]/)[0].slice(0, 42) || "New site";
+    const name = (prompt.split(/[.!?\n]/)[0] ?? "").slice(0, 42) || "New site";
     createProject(name, mode);
     void runAgent({ instruction: prompt });
   };

@@ -7,10 +7,10 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   text: string;
-  plan?: string[];
-  touched?: string[];
-  error?: boolean;
-  streaming?: boolean;
+  plan?: string[] | undefined;
+  touched?: string[] | undefined;
+  error?: boolean | undefined;
+  streaming?: boolean | undefined;
 }
 
 export interface Version {
@@ -28,8 +28,8 @@ export interface Project {
   messages: ChatMessage[];
   versions: Version[];
   createdAt: number;
-  repo?: string;
-  publishedUrl?: string;
+  repo?: string | undefined;
+  publishedUrl?: string | undefined;
 }
 
 interface BuilderState {
@@ -162,7 +162,7 @@ export const useBuilder = create<BuilderState>()(
         const files = state.projects.find((p) => p.id === state.activeId)?.files ?? {};
         const active = state.activeFile;
         if (touched.length && (!active || files[active] === undefined)) {
-          set({ activeFile: touched[0] });
+          set({ activeFile: touched[0] ?? null });
         }
         return [...new Set(touched)];
       },

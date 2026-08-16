@@ -85,8 +85,8 @@ export async function publishToPages(opts: {
   token: string;
   name: string;
   files: Record<string, string>;
-  customDomain?: string;
-  onStep?: (step: string) => void;
+  customDomain?: string | undefined;
+  onStep?: ((step: string) => void) | undefined;
 }): Promise<PublishResult> {
   const { token, files, onStep } = opts;
   const repo = `site-${slugify(opts.name)}`;

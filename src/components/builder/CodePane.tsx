@@ -55,7 +55,7 @@ export function CodePane({
       <div className="min-w-0 flex-1 overflow-hidden">
         {current ? (
           <CodeMirror
-            value={files[current]}
+            value={files[current] ?? ""}
             height="100%"
             theme={vscodeDark}
             extensions={langFor(current)}

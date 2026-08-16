@@ -22,7 +22,7 @@ export function parseActions(raw: string): AgentAction[] {
   const found: { index: number; action: AgentAction }[] = [];
 
   for (const m of raw.matchAll(PLAN_RE)) {
-    const steps = m[1]
+    const steps = (m[1] ?? "")
       .split("\n")
       .map((s) => s.replace(/^[-*\d.\s]+/, "").trim())
       .filter(Boolean);
@@ -31,20 +31,25 @@ export function parseActions(raw: string): AgentAction[] {
   for (const m of raw.matchAll(FILE_RE)) {
     found.push({
       index: m.index ?? 0,
-      action: { kind: "write", path: m[1].trim(), content: stripFence(m[2]) },
+      action: { kind: "write", path: (m[1] ?? "").trim(), content: stripFence(m[2] ?? "") },
     });
   }
   for (const m of raw.matchAll(EDIT_RE)) {
     found.push({
       index: m.index ?? 0,
-      action: { kind: "edit", path: m[1].trim(), find: m[2], replace: m[3] },
+      action: {
+        kind: "edit",
+        path: (m[1] ?? "").trim(),
+        find: m[2] ?? "",
+        replace: m[3] ?? "",
+      },
     });
   }
   for (const m of raw.matchAll(DELETE_RE)) {
-    found.push({ index: m.index ?? 0, action: { kind: "delete", path: m[1].trim() } });
+    found.push({ index: m.index ?? 0, action: { kind: "delete", path: (m[1] ?? "").trim() } });
   }
   for (const m of raw.matchAll(MSG_RE)) {
-    found.push({ index: m.index ?? 0, action: { kind: "message", text: m[1].trim() } });
+    found.push({ index: m.index ?? 0, action: { kind: "message", text: (m[1] ?? "").trim() } });
   }
 
   if (found.length === 0) {
@@ -58,7 +63,7 @@ export function parseActions(raw: string): AgentAction[] {
 /** Live progress info for a partially streamed response. */
 export function streamProgress(raw: string): { writing: string | null; done: string[] } {
   const done: string[] = [];
-  for (const m of raw.matchAll(FILE_RE)) done.push(m[1].trim());
+  for (const m of raw.matchAll(FILE_RE)) done.push((m[1] ?? "").trim());
   const open = raw.lastIndexOf("<lov-write");
   const close = raw.lastIndexOf("</lov-write>");
   let writing: string | null = null;

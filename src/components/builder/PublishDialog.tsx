@@ -42,7 +42,7 @@ export function PublishDialog({
         token: githubToken,
         name: project.name,
         files,
-        customDomain: domain.trim() || undefined,
+        ...(domain.trim() ? { customDomain: domain.trim() } : {}),
         onStep: setStep,
       });
       setPublished(result.repo, result.url);

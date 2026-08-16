@@ -25,9 +25,9 @@ interface StreamArgs {
   model: string;
   system: string;
   history: GeminiTurn[];
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
   onDelta: (chunk: string) => void;
-  temperature?: number;
+  temperature?: number | undefined;
 }
 
 async function streamOnce({
@@ -44,7 +44,7 @@ async function streamOnce({
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal,
+      signal: signal ?? null,
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: history.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
@@ -104,7 +104,7 @@ async function streamOnce({
 }
 
 /** Streams a completion, automatically falling back to a lighter model on quota errors. */
-export async function streamGemini(args: StreamArgs & { fallbacks?: string[] }): Promise<string> {
+export async function streamGemini(args: StreamArgs & { fallbacks?: string[] | undefined }): Promise<string> {
   const chain = [args.model, ...(args.fallbacks ?? [])];
   let lastError: unknown;
   for (const model of chain) {

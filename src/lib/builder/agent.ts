@@ -38,8 +38,8 @@ function history(mode: BuildMode, files: Record<string, string>): GeminiTurn[] {
 
 export interface RunOptions {
   instruction: string;
-  signal?: AbortSignal;
-  silentUser?: boolean;
+  signal?: AbortSignal | undefined;
+  silentUser?: boolean | undefined;
 }
 
 export async function runAgent({ instruction, signal, silentUser }: RunOptions) {
@@ -88,7 +88,7 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
   useBuilder.getState().patchMessage(msgId, {
     streaming: false,
     touched,
-    plan: plan?.kind === "plan" ? plan.steps : undefined,
+    ...(plan?.kind === "plan" ? { plan: plan.steps } : {}),
     text:
       (message?.kind === "message" ? message.text : humanText(raw)) ||
       (touched.length ? `Updated ${touched.length} file(s).` : "Done."),
