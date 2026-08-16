@@ -158,8 +158,10 @@ export const useBuilder = create<BuilderState>()(
             return { ...p, files };
           }),
         );
-        const active = get().activeFile;
-        if (touched.length && (!active || !get().activeProjectFiles()[active])) {
+        const state = get();
+        const files = state.projects.find((p) => p.id === state.activeId)?.files ?? {};
+        const active = state.activeFile;
+        if (touched.length && (!active || files[active] === undefined)) {
           set({ activeFile: touched[0] });
         }
         return [...new Set(touched)];
@@ -195,12 +197,7 @@ export const useBuilder = create<BuilderState>()(
         ),
       setPublished: (repo, url) =>
         set((s) => updateActive(s, (p) => ({ ...p, repo, publishedUrl: url }))),
-      // helper (not part of the public surface)
-      activeProjectFiles: () => {
-        const s = get();
-        return s.projects.find((p) => p.id === s.activeId)?.files ?? {};
-      },
-    }) as BuilderState & { activeProjectFiles: () => Record<string, string> },
+    }),
     {
       name: "atlas-builder",
       partialize: (s) => ({
