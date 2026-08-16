@@ -21,7 +21,18 @@ export function SettingsDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { apiKey, model, githubToken, setKey, setModel, setGithub } = useBuilder();
+  const {
+    apiKey,
+    model,
+    githubToken,
+    provider,
+    setProvider,
+    backendUrl,
+    setBackendUrl,
+    setKey,
+    setModel,
+    setGithub,
+  } = useBuilder();
   const [key, setLocalKey] = useState(apiKey);
   const [token, setToken] = useState(githubToken);
   const [busy, setBusy] = useState(false);
@@ -67,6 +78,48 @@ export function SettingsDialog({
         </DialogHeader>
 
         <div className="space-y-5">
+          <div className="space-y-2">
+            <Label>AI engine</Label>
+            <div className="grid gap-2">
+              {[
+                {
+                  id: "atlas" as const,
+                  label: "Atlas AI (free, built in — no key needed)",
+                },
+                { id: "gemini" as const, label: "My own Gemini key (unlimited, your quota)" },
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setProvider(option.id)}
+                  className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                    provider === option.id
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {provider === "atlas" ? (
+            <div className="space-y-2">
+              <Label htmlFor="backend">Atlas AI backend URL (optional)</Label>
+              <Input
+                id="backend"
+                value={backendUrl}
+                onChange={(e) => setBackendUrl(e.target.value)}
+                placeholder="https://your-atlas.lovable.app"
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave empty to use this site&apos;s own backend. Set it when Atlas runs on GitHub
+                Pages and should call your hosted backend instead.
+              </p>
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <Label htmlFor="gemini">Gemini API key</Label>
             <Input

@@ -1,3 +1,4 @@
+import { streamBackend } from "./backend";
 import { GeminiError, streamGemini, type GeminiTurn } from "./gemini";
 import { ENHANCER_PROMPT, projectContext, systemPrompt, type BuildMode } from "./prompt";
 import { humanText, parseActions, streamProgress } from "./protocol";
@@ -36,6 +37,29 @@ function history(mode: BuildMode, files: Record<string, string>): GeminiTurn[] {
   return [{ role: "user", text: projectContext(files) }, ...past];
 }
 
+interface StreamArgs {
+  system: string;
+  history: GeminiTurn[];
+  signal?: AbortSignal | undefined;
+  temperature?: number | undefined;
+  onDelta: (chunk: string) => void;
+}
+
+/** Routes a completion to the free Atlas backend or the user's own Gemini key. */
+async function stream(args: StreamArgs) {
+  const state = useBuilder.getState();
+  if (state.provider === "atlas") {
+    return streamBackend({ base: state.backendUrl, ...args });
+  }
+  if (!state.apiKey) throw new Error("Add your Gemini API key first, or switch to Atlas AI.");
+  return streamGemini({
+    apiKey: state.apiKey,
+    model: state.model,
+    fallbacks: FALLBACKS[state.model] ?? [],
+    ...args,
+  });
+}
+
 export interface RunOptions {
   instruction: string;
   signal?: AbortSignal | undefined;
@@ -46,7 +70,8 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
   const state = useBuilder.getState();
   const project = state.projects.find((p) => p.id === state.activeId);
   if (!project) return;
-  if (!state.apiKey) throw new Error("Add your Gemini API key first.");
+  if (state.provider === "gemini" && !state.apiKey)
+    throw new Error("Add your Gemini API key first, or switch to Atlas AI in Settings.");
 
   if (!silentUser) {
     state.addMessage({ id: uid(), role: "user", text: instruction });
@@ -57,10 +82,7 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
 
   let raw = "";
   try {
-    await streamGemini({
-      apiKey: state.apiKey,
-      model: state.model,
-      fallbacks: FALLBACKS[state.model] ?? [],
+    await stream({
       system: systemPrompt(project.mode),
       history: [...history(project.mode, project.files), { role: "user", text: instruction }],
       signal,
@@ -96,12 +118,8 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
 }
 
 export async function enhancePrompt(idea: string) {
-  const { apiKey, model } = useBuilder.getState();
   let out = "";
-  await streamGemini({
-    apiKey,
-    model,
-    fallbacks: FALLBACKS[model] ?? [],
+  await stream({
     system: ENHANCER_PROMPT,
     history: [{ role: "user", text: idea }],
     temperature: 1,

@@ -7,6 +7,8 @@ import { useBuilder } from "@/lib/builder/store";
 
 export function KeyGate() {
   const setKey = useBuilder((s) => s.setKey);
+  const setProvider = useBuilder((s) => s.setProvider);
+  const setOnboarded = useBuilder((s) => s.setOnboarded);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +25,8 @@ export function KeyGate() {
       return;
     }
     setKey(value.trim());
+    setProvider("gemini");
+    setOnboarded(true);
   };
 
   return (
@@ -35,7 +39,7 @@ export function KeyGate() {
           <h1 className="text-4xl font-bold">Atlas</h1>
           <p className="mt-3 text-sm text-muted-foreground">
             Describe a website. Get a real one — previewed, editable, and published to GitHub
-            Pages for free.
+            Pages for free. Bring your own Gemini key, or use the built-in Atlas AI.
           </p>
         </div>
 
@@ -54,7 +58,18 @@ export function KeyGate() {
           />
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Checking key…" : "Start building"}
+            {busy ? "Checking key…" : "Start building with my key"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              setProvider("atlas");
+              setOnboarded(true);
+            }}
+          >
+            <Zap className="size-4" /> Or start free with built-in Atlas AI
           </Button>
           <p className="text-center text-xs text-muted-foreground">
             Stored in this browser only.{" "}
