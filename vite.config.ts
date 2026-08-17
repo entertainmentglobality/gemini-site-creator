@@ -8,9 +8,12 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 // STATIC=1 produces a plain prerendered static bundle (dist/client) for GitHub Pages.
 const STATIC = process.env["STATIC"] === "1";
+// GitHub Pages serves project repos from /<repo>/ — BASE_PATH keeps asset URLs correct.
+const BASE_PATH = process.env["BASE_PATH"] || "/";
 
 export default defineConfig({
   ...(STATIC ? { nitro: false as const } : {}),
+  ...(STATIC && BASE_PATH !== "/" ? { vite: { base: BASE_PATH } } : {}),
   tanstackStart: {
     // Prerender "/" only for the static bundle; the Lovable/Nitro build serves SSR.
     ...(STATIC
