@@ -23,12 +23,11 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun run build
+      - run: STATIC=1 bun run build
       - name: Prepare static output
         run: |
-          OUT=.output/public
-          if [ ! -d "$OUT" ]; then OUT=dist/client; fi
-          if [ ! -d "$OUT" ]; then OUT=dist; fi
+          OUT=dist/client
+          if [ ! -d "$OUT" ]; then OUT=.output/public; fi
           echo "Publishing $OUT"
           cp "$OUT/index.html" "$OUT/404.html" 2>/dev/null || true
           touch "$OUT/.nojekyll"
