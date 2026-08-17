@@ -12,8 +12,9 @@ const STATIC = process.env["STATIC"] === "1";
 export default defineConfig({
   ...(STATIC ? { nitro: false as const } : {}),
   tanstackStart: {
-    // Prerender "/" so the app can also be served as pure static files (GitHub Pages).
-    prerender: { enabled: true, crawlLinks: false },
-    pages: [{ path: "/" }],
+    // Prerender "/" only for the static bundle; the Lovable/Nitro build serves SSR.
+    ...(STATIC
+      ? { prerender: { enabled: true, crawlLinks: false }, pages: [{ path: "/" }] }
+      : { server: { entry: "server" } }),
   },
 });
