@@ -23,12 +23,19 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun run build
+      - name: Build static site
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          BASE="/$REPO/"
+          # user/org pages repos are served from the domain root
+          if [ "$REPO" = "$OWNER.github.io" ]; then BASE="/"; fi
+          echo "Base path: $BASE"
+          STATIC=1 BASE_PATH="$BASE" bun run build
       - name: Prepare static output
         run: |
-          OUT=.output/public
-          if [ ! -d "$OUT" ]; then OUT=dist/client; fi
-          if [ ! -d "$OUT" ]; then OUT=dist; fi
+          OUT=dist/client
+          if [ ! -d "$OUT" ]; then OUT=.output/public; fi
           echo "Publishing $OUT"
           cp "$OUT/index.html" "$OUT/404.html" 2>/dev/null || true
           touch "$OUT/.nojekyll"

@@ -1,11 +1,22 @@
 import type { GeminiTurn } from "./gemini";
 
+/**
+ * Fallback host for the free Atlas AI backend, used when Atlas itself is served as
+ * static files (e.g. GitHub Pages) where no /api route exists. Users can override it
+ * in Settings, or ignore it entirely by using their own Gemini key.
+ */
+export const DEFAULT_BACKEND = "https://web-creator-buddy-54.lovable.app";
+
+const isStaticHost = () =>
+  typeof window !== "undefined" &&
+  !/\.lovable\.app$|^localhost$|^127\.0\.0\.1$/.test(window.location.hostname);
+
 /** Where the free Atlas AI backend lives. Same-origin when the app is served by Lovable. */
 export function backendBase(explicit?: string) {
   const trimmed = (explicit ?? "").trim().replace(/\/+$/, "");
   if (trimmed) return trimmed;
   if (typeof window === "undefined") return "";
-  return window.location.origin;
+  return isStaticHost() ? DEFAULT_BACKEND : window.location.origin;
 }
 
 export async function backendAvailable(base: string) {

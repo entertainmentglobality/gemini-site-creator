@@ -6,13 +6,18 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// STATIC=1 produces a plain prerendered static bundle (dist/client) for GitHub Pages.
+const STATIC = process.env["STATIC"] === "1";
+// GitHub Pages serves project repos from /<repo>/ — BASE_PATH keeps asset URLs correct.
+const BASE_PATH = process.env["BASE_PATH"] || "/";
+
 export default defineConfig({
+  ...(STATIC ? { nitro: false as const } : {}),
+  ...(STATIC && BASE_PATH !== "/" ? { vite: { base: BASE_PATH } } : {}),
   tanstackStart: {
-    // Prerender "/" so the app can also be served as pure static files (GitHub Pages).
-    prerender: { enabled: true, crawlLinks: false },
-    pages: [{ path: "/" }],
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
+    // Prerender "/" only for the static bundle; the Lovable/Nitro build serves SSR.
+    ...(STATIC
+      ? { prerender: { enabled: true, crawlLinks: false }, pages: [{ path: "/" }] }
+      : { server: { entry: "server" } }),
   },
 });
