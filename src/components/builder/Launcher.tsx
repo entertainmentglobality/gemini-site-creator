@@ -51,8 +51,8 @@ export function Launcher({
           Build a website by describing it
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-balance text-center text-sm text-muted-foreground sm:text-base">
-          Powered by your own Gemini key. Preview instantly, edit the code, publish free to
-          GitHub Pages.
+          Build with free Atlas AI or your own Gemini key. Preview every site here, edit its
+          code, then publish free to GitHub Pages.
         </p>
 
         <div className="panel mt-10 p-3 shadow-[var(--shadow-panel)]">

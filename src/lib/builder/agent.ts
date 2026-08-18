@@ -81,6 +81,7 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
   state.snapshot(instruction.slice(0, 60));
 
   let raw = "";
+  const streamedFiles = new Map<string, string>();
   try {
     await stream({
       system: systemPrompt(project.mode),
@@ -89,6 +90,12 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
       onDelta: (delta) => {
         raw += delta;
         const progress = streamProgress(raw);
+        for (const action of parseActions(raw)) {
+          if (action.kind !== "write") continue;
+          if (streamedFiles.get(action.path) === action.content) continue;
+          streamedFiles.set(action.path, action.content);
+          useBuilder.getState().writeFile(action.path, action.content);
+        }
         const label = progress.writing
           ? `Writing ${progress.writing}…`
           : humanText(raw) || "Thinking…";
@@ -113,7 +120,9 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
     ...(plan?.kind === "plan" ? { plan: plan.steps } : {}),
     text:
       (message?.kind === "message" ? message.text : humanText(raw)) ||
-      (touched.length ? `Updated ${touched.length} file(s).` : "Done."),
+      (touched.length
+        ? `Built ${touched.length} file${touched.length === 1 ? "" : "s"}. The live preview is ready.`
+        : "I couldn't extract a complete website from that response. Please retry, or switch AI engine in Settings."),
   });
 }
 

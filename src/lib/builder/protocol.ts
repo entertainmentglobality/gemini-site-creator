@@ -11,6 +11,8 @@ const EDIT_RE =
 const DELETE_RE = /<lov-delete\s+path="([^"]+)"\s*\/>/g;
 const PLAN_RE = /<lov-plan>([\s\S]*?)<\/lov-plan>/g;
 const MSG_RE = /<lov-message>([\s\S]*?)<\/lov-message>/g;
+const OPEN_FILE_RE = /<lov-write\s+path=["']([^"']+)["']>\n?([\s\S]*)$/;
+const FENCE_RE = /```(html|css|javascript|js|jsx|tsx)?\s*\n([\s\S]*?)```/gi;
 
 function stripFence(text: string) {
   const trimmed = text.replace(/^\s*```[a-zA-Z0-9]*\n/, "").replace(/\n?```\s*$/, "");
@@ -50,6 +52,37 @@ export function parseActions(raw: string): AgentAction[] {
   }
   for (const m of raw.matchAll(MSG_RE)) {
     found.push({ index: m.index ?? 0, action: { kind: "message", text: (m[1] ?? "").trim() } });
+  }
+
+  if (found.length === 0) {
+    const openFile = OPEN_FILE_RE.exec(raw);
+    if (openFile?.[1] && openFile[2]?.trim()) {
+      found.push({
+        index: openFile.index,
+        action: {
+          kind: "write",
+          path: openFile[1].trim(),
+          content: stripFence(openFile[2].trim()),
+        },
+      });
+    } else {
+      const fences = [...raw.matchAll(FENCE_RE)];
+      for (const [index, match] of fences.entries()) {
+        const language = (match[1] ?? "html").toLowerCase();
+        const path =
+          language === "css"
+            ? "styles.css"
+            : language === "javascript" || language === "js"
+              ? "script.js"
+              : language === "jsx" || language === "tsx"
+                ? "src/App.jsx"
+                : "index.html";
+        found.push({
+          index: match.index ?? index,
+          action: { kind: "write", path, content: match[2] ?? "" },
+        });
+      }
+    }
   }
 
   if (found.length === 0) {
