@@ -1,7 +1,7 @@
 import { streamBackend } from "./backend";
 import { GeminiError, streamGemini, type GeminiTurn } from "./gemini";
 import { ENHANCER_PROMPT, projectContext, systemPrompt, type BuildMode } from "./prompt";
-import { humanText, parseActions, streamProgress } from "./protocol";
+import { humanText, parseActions, streamingWrites, streamProgress } from "./protocol";
 import { uid, useBuilder } from "./store";
 
 const FALLBACKS: Record<string, string[]> = {
@@ -90,9 +90,11 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
       onDelta: (delta) => {
         raw += delta;
         const progress = streamProgress(raw);
-        for (const action of parseActions(raw)) {
-          if (action.kind !== "write") continue;
-          if (streamedFiles.get(action.path) === action.content) continue;
+        for (const action of streamingWrites(raw)) {
+          const previous = streamedFiles.get(action.path) ?? "";
+          const isComplete = raw.includes(`</lov-write>`);
+          if (previous === action.content || (!isComplete && action.content.length - previous.length < 400))
+            continue;
           streamedFiles.set(action.path, action.content);
           useBuilder.getState().writeFile(action.path, action.content);
         }

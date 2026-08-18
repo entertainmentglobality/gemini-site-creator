@@ -93,6 +93,22 @@ export function parseActions(raw: string): AgentAction[] {
   return found.sort((a, b) => a.index - b.index).map((f) => f.action);
 }
 
+/** Returns complete files plus the currently streaming file for progressive preview. */
+export function streamingWrites(raw: string): Extract<AgentAction, { kind: "write" }>[] {
+  const writes = parseActions(raw).filter(
+    (action): action is Extract<AgentAction, { kind: "write" }> => action.kind === "write",
+  );
+  const open = raw.lastIndexOf("<lov-write");
+  const close = raw.lastIndexOf("</lov-write>");
+  if (open <= close) return writes;
+  const partial = OPEN_FILE_RE.exec(raw.slice(open));
+  if (!partial?.[1] || !partial[2]?.trim()) return writes;
+  return [
+    ...writes.filter((write) => write.path !== partial[1]),
+    { kind: "write", path: partial[1].trim(), content: stripFence(partial[2]) },
+  ];
+}
+
 /** Live progress info for a partially streamed response. */
 export function streamProgress(raw: string): { writing: string | null; done: string[] } {
   const done: string[] = [];
