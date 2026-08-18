@@ -56,6 +56,7 @@ export const Route = createFileRoute("/api/public/ai")({
             model: payload.model ?? "google/gemini-3.6-flash",
             stream: true,
             temperature: payload.temperature ?? 0.8,
+            max_tokens: 24000,
             messages: [
               ...(payload.system ? [{ role: "system", content: payload.system }] : []),
               ...messages.map((m) => ({

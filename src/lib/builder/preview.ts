@@ -32,11 +32,11 @@ function injectInto(html: string) {
 function inlineAssets(html: string, files: Record<string, string>) {
   let out = html;
   out = out.replace(
-    /<link[^>]+href="\.?\/?([^":]+\.css)"[^>]*>/g,
+    /<link[^>]+href=["']\.?\/?([^"':]+\.css)["'][^>]*>/g,
     (m, href) => (files[href] !== undefined ? `<style>\n${files[href]}\n</style>` : m),
   );
   out = out.replace(
-    /<script[^>]+src="\.?\/?([^":]+\.js)"[^>]*>\s*<\/script>/g,
+    /<script[^>]+src=["']\.?\/?([^"':]+\.js)["'][^>]*>\s*<\/script>/g,
     (m, src) => (files[src] !== undefined ? `<script>\n${files[src]}\n</script>` : m),
   );
   return out;

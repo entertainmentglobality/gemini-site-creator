@@ -1,7 +1,7 @@
 import { streamBackend } from "./backend";
 import { GeminiError, streamGemini, type GeminiTurn } from "./gemini";
 import { ENHANCER_PROMPT, projectContext, systemPrompt, type BuildMode } from "./prompt";
-import { humanText, parseActions, streamProgress } from "./protocol";
+import { humanText, parseActions, streamingWrites, streamProgress } from "./protocol";
 import { uid, useBuilder } from "./store";
 
 const FALLBACKS: Record<string, string[]> = {
@@ -81,6 +81,7 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
   state.snapshot(instruction.slice(0, 60));
 
   let raw = "";
+  const streamedFiles = new Map<string, string>();
   try {
     await stream({
       system: systemPrompt(project.mode),
@@ -89,6 +90,14 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
       onDelta: (delta) => {
         raw += delta;
         const progress = streamProgress(raw);
+        for (const action of streamingWrites(raw)) {
+          const previous = streamedFiles.get(action.path) ?? "";
+          const isComplete = raw.includes(`</lov-write>`);
+          if (previous === action.content || (!isComplete && action.content.length - previous.length < 400))
+            continue;
+          streamedFiles.set(action.path, action.content);
+          useBuilder.getState().writeFile(action.path, action.content);
+        }
         const label = progress.writing
           ? `Writing ${progress.writing}…`
           : humanText(raw) || "Thinking…";
@@ -113,7 +122,9 @@ export async function runAgent({ instruction, signal, silentUser }: RunOptions) 
     ...(plan?.kind === "plan" ? { plan: plan.steps } : {}),
     text:
       (message?.kind === "message" ? message.text : humanText(raw)) ||
-      (touched.length ? `Updated ${touched.length} file(s).` : "Done."),
+      (touched.length
+        ? `Built ${touched.length} file${touched.length === 1 ? "" : "s"}. The live preview is ready.`
+        : "I couldn't extract a complete website from that response. Please retry, or switch AI engine in Settings."),
   });
 }
 

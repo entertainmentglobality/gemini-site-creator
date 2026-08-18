@@ -48,7 +48,7 @@ async function streamOnce({
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: history.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
-        generationConfig: { temperature, topP: 0.95, maxOutputTokens: 65536 },
+        generationConfig: { temperature, topP: 0.95, maxOutputTokens: 24000 },
         safetySettings: [
           "HARM_CATEGORY_HARASSMENT",
           "HARM_CATEGORY_HATE_SPEECH",

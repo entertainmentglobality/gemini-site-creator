@@ -11,6 +11,8 @@ const EDIT_RE =
 const DELETE_RE = /<lov-delete\s+path="([^"]+)"\s*\/>/g;
 const PLAN_RE = /<lov-plan>([\s\S]*?)<\/lov-plan>/g;
 const MSG_RE = /<lov-message>([\s\S]*?)<\/lov-message>/g;
+const OPEN_FILE_RE = /<lov-write\s+path=["']([^"']+)["']>\n?([\s\S]*)$/;
+const FENCE_RE = /```(html|css|javascript|js|jsx|tsx)?\s*\n([\s\S]*?)```/gi;
 
 function stripFence(text: string) {
   const trimmed = text.replace(/^\s*```[a-zA-Z0-9]*\n/, "").replace(/\n?```\s*$/, "");
@@ -53,11 +55,58 @@ export function parseActions(raw: string): AgentAction[] {
   }
 
   if (found.length === 0) {
+    const openFile = OPEN_FILE_RE.exec(raw);
+    if (openFile?.[1] && openFile[2]?.trim()) {
+      found.push({
+        index: openFile.index,
+        action: {
+          kind: "write",
+          path: openFile[1].trim(),
+          content: stripFence(openFile[2].trim()),
+        },
+      });
+    } else {
+      const fences = [...raw.matchAll(FENCE_RE)];
+      for (const [index, match] of fences.entries()) {
+        const language = (match[1] ?? "html").toLowerCase();
+        const path =
+          language === "css"
+            ? "styles.css"
+            : language === "javascript" || language === "js"
+              ? "script.js"
+              : language === "jsx" || language === "tsx"
+                ? "src/App.jsx"
+                : "index.html";
+        found.push({
+          index: match.index ?? index,
+          action: { kind: "write", path, content: match[2] ?? "" },
+        });
+      }
+    }
+  }
+
+  if (found.length === 0) {
     const text = raw.trim();
     if (text) return [{ kind: "message", text }];
   }
 
   return found.sort((a, b) => a.index - b.index).map((f) => f.action);
+}
+
+/** Returns complete files plus the currently streaming file for progressive preview. */
+export function streamingWrites(raw: string): Extract<AgentAction, { kind: "write" }>[] {
+  const writes = parseActions(raw).filter(
+    (action): action is Extract<AgentAction, { kind: "write" }> => action.kind === "write",
+  );
+  const open = raw.lastIndexOf("<lov-write");
+  const close = raw.lastIndexOf("</lov-write>");
+  if (open <= close) return writes;
+  const partial = OPEN_FILE_RE.exec(raw.slice(open));
+  if (!partial?.[1] || !partial[2]?.trim()) return writes;
+  return [
+    ...writes.filter((write) => write.path !== partial[1]),
+    { kind: "write", path: partial[1].trim(), content: stripFence(partial[2]) },
+  ];
 }
 
 /** Live progress info for a partially streamed response. */
