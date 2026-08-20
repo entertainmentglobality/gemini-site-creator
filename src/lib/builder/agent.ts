@@ -4,12 +4,6 @@ import { ENHANCER_PROMPT, projectContext, systemPrompt, type BuildMode } from ".
 import { humanText, parseActions, streamingWrites, streamProgress } from "./protocol";
 import { uid, useBuilder } from "./store";
 
-const FALLBACKS: Record<string, string[]> = {
-  "gemini-2.5-pro": ["gemini-2.5-flash", "gemini-2.0-flash"],
-  "gemini-2.5-flash": ["gemini-2.0-flash"],
-  "gemini-2.0-flash": [],
-};
-
 function friendlyError(error: unknown) {
   if (error instanceof GeminiError) {
     if (error.status === 429)
@@ -52,12 +46,7 @@ async function stream(args: StreamArgs) {
     return streamBackend({ base: state.backendUrl, ...args });
   }
   if (!state.apiKey) throw new Error("Add your Gemini API key first, or switch to Atlas AI.");
-  return streamGemini({
-    apiKey: state.apiKey,
-    model: state.model,
-    fallbacks: FALLBACKS[state.model] ?? [],
-    ...args,
-  });
+  return streamGemini({ apiKey: state.apiKey, models: state.models, ...args });
 }
 
 export interface RunOptions {
