@@ -43,6 +43,7 @@ interface BuilderState {
   hubDomain: string;
   apiKey: string;
   model: string;
+  models: string[];
   githubToken: string;
   githubUser: string;
   projects: Project[];
@@ -56,6 +57,7 @@ interface BuilderState {
   setHubDomain: (domain: string) => void;
   setKey: (key: string) => void;
   setModel: (model: string) => void;
+  setModels: (models: string[]) => void;
   setGithub: (token: string, user: string) => void;
 
   createProject: (name: string, mode: BuildMode, files?: Record<string, string>) => string;
@@ -95,7 +97,8 @@ export const useBuilder = create<BuilderState>()(
       publishTarget: "hub",
       hubDomain: "",
       apiKey: "",
-      model: "gemini-2.5-flash",
+      model: "auto",
+      models: [],
       githubToken: "",
       githubUser: "",
       projects: [],
@@ -109,6 +112,7 @@ export const useBuilder = create<BuilderState>()(
       setHubDomain: (hubDomain) => set({ hubDomain }),
       setKey: (apiKey) => set({ apiKey }),
       setModel: (model) => set({ model }),
+      setModels: (models) => set({ models }),
       setGithub: (githubToken, githubUser) => set({ githubToken, githubUser }),
 
       createProject: (name, mode, files = {}) => {
@@ -231,6 +235,7 @@ export const useBuilder = create<BuilderState>()(
         hubDomain: s.hubDomain,
         apiKey: s.apiKey,
         model: s.model,
+        models: s.models,
         githubToken: s.githubToken,
         githubUser: s.githubUser,
         projects: s.projects,

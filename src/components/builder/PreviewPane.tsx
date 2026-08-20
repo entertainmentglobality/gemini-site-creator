@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Monitor, RefreshCw, Smartphone, Tablet, Terminal, Wrench, X } from "lucide-react";
+import { Check, Loader2, Monitor, RefreshCw, Smartphone, Tablet, Terminal, Wrench, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildPreview, htmlPages } from "@/lib/builder/preview";
 import type { BuildMode } from "@/lib/builder/prompt";
@@ -32,6 +32,7 @@ export function PreviewPane({
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [showConsole, setShowConsole] = useState(false);
   const [nonce, setNonce] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const frameRef = useRef<HTMLIFrameElement>(null);
 
   const pages = htmlPages(files);
@@ -44,6 +45,14 @@ export function PreviewPane({
   useEffect(() => {
     setLogs([]);
   }, [srcDoc]);
+
+  useEffect(() => {
+    if (!busy) return;
+    setElapsed(0);
+    const started = Date.now();
+    const id = window.setInterval(() => setElapsed(Math.round((Date.now() - started) / 1000)), 250);
+    return () => window.clearInterval(id);
+  }, [busy]);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -60,6 +69,15 @@ export function PreviewPane({
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [files]);
+
+  const written = Object.keys(files);
+  const showOverlay = busy && written.length < 2;
+  const steps = [
+    { label: "Understanding your idea", done: true },
+    { label: "Choosing the right stack", done: elapsed > 2 },
+    { label: "Designing the interface", done: elapsed > 6 || written.length > 0 },
+    { label: "Writing the code", done: written.length > 0 },
+  ];
 
   const errors = logs.filter((l) => l.level === "error").map((l) => l.message);
 
@@ -124,7 +142,40 @@ export function PreviewPane({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 justify-center overflow-auto bg-background p-3">
+      <div className="relative flex min-h-0 flex-1 justify-center overflow-auto bg-background p-3">
+        {showOverlay && (
+          <div className="absolute inset-0 z-10 grid place-items-center bg-background/95 p-6 backdrop-blur-sm">
+            <div className="w-full max-w-sm text-center">
+              <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/10">
+                <Loader2 className="size-6 animate-spin text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold">Your website is being created…</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {elapsed}s elapsed · usually 20–60s for a full build
+              </p>
+              <ul className="mt-5 space-y-2 text-left text-sm">
+                {steps.map((s) => (
+                  <li key={s.label} className="flex items-center gap-2">
+                    {s.done ? (
+                      <Check className="size-4 text-primary" />
+                    ) : (
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    )}
+                    <span className={s.done ? "text-foreground" : "text-muted-foreground"}>
+                      {s.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-5 h-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(95, 8 + elapsed * 4)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
         <iframe
           ref={frameRef}
           title="Preview"

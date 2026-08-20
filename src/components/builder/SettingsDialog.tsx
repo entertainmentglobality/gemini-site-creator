@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GEMINI_MODELS, validateKey } from "@/lib/builder/gemini";
+import { discoverModels } from "@/lib/builder/gemini";
 import { whoAmI } from "@/lib/builder/github";
 import { useBuilder } from "@/lib/builder/store";
 
@@ -23,14 +23,14 @@ export function SettingsDialog({
 }) {
   const {
     apiKey,
-    model,
+    models,
     githubToken,
     provider,
     setProvider,
     backendUrl,
     setBackendUrl,
     setKey,
-    setModel,
+    setModels,
     setGithub,
   } = useBuilder();
   const [key, setLocalKey] = useState(apiKey);
@@ -41,8 +41,11 @@ export function SettingsDialog({
     setBusy(true);
     try {
       if (key && key !== apiKey) {
-        const ok = await validateKey(key);
-        if (!ok) {
+        try {
+          const chain = await discoverModels(key);
+          setModels(chain);
+          toast.success(`Gemini connected — using ${chain[0]}`);
+        } catch {
           toast.error("Gemini rejected that key.");
           return;
         }
@@ -142,20 +145,14 @@ export function SettingsDialog({
 
           <div className="space-y-2">
             <Label>Model</Label>
-            <div className="grid gap-2">
-              {GEMINI_MODELS.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setModel(m.id)}
-                  className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                    model === m.id
-                      ? "border-primary bg-primary/10 text-foreground"
-                      : "border-border text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Automatic. Atlas detects the newest Gemini models your key can use and falls back
+              down the list on any error.
+              {models.length ? (
+                <span className="mt-1 block font-mono text-[11px] text-primary">
+                  {models.slice(0, 4).join(" → ")}
+                </span>
+              ) : null}
             </div>
           </div>
 

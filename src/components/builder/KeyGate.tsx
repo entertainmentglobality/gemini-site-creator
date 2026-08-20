@@ -2,11 +2,12 @@ import { useState } from "react";
 import { KeyRound, Sparkles, Github, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { validateKey } from "@/lib/builder/gemini";
+import { discoverModels } from "@/lib/builder/gemini";
 import { useBuilder } from "@/lib/builder/store";
 
 export function KeyGate() {
   const setKey = useBuilder((s) => s.setKey);
+  const setModels = useBuilder((s) => s.setModels);
   const setProvider = useBuilder((s) => s.setProvider);
   const setOnboarded = useBuilder((s) => s.setOnboarded);
   const [value, setValue] = useState("");
@@ -18,12 +19,13 @@ export function KeyGate() {
     if (!value.trim()) return;
     setBusy(true);
     setError("");
-    const ok = await validateKey(value.trim()).catch(() => false);
+    const chain = await discoverModels(value.trim()).catch(() => null);
     setBusy(false);
-    if (!ok) {
+    if (!chain) {
       setError("Google rejected that key. Check it and try again.");
       return;
     }
+    setModels(chain);
     setKey(value.trim());
     setProvider("gemini");
     setOnboarded(true);

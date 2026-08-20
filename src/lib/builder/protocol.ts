@@ -3,6 +3,8 @@ export type AgentAction =
   | { kind: "write"; path: string; content: string }
   | { kind: "edit"; path: string; find: string; replace: string }
   | { kind: "delete"; path: string }
+  | { kind: "mode"; mode: string }
+  | { kind: "name"; name: string }
   | { kind: "message"; text: string };
 
 const FILE_RE = /<lov-write\s+path="([^"]+)">\n?([\s\S]*?)<\/lov-write>/g;
@@ -11,6 +13,8 @@ const EDIT_RE =
 const DELETE_RE = /<lov-delete\s+path="([^"]+)"\s*\/>/g;
 const PLAN_RE = /<lov-plan>([\s\S]*?)<\/lov-plan>/g;
 const MSG_RE = /<lov-message>([\s\S]*?)<\/lov-message>/g;
+const MODE_RE = /<lov-mode>\s*([a-z]+)\s*<\/lov-mode>/gi;
+const NAME_RE = /<lov-name>([\s\S]*?)<\/lov-name>/g;
 const OPEN_FILE_RE = /<lov-write\s+path=["']([^"']+)["']>\n?([\s\S]*)$/;
 const FENCE_RE = /```(html|css|javascript|js|jsx|tsx)?\s*\n([\s\S]*?)```/gi;
 
@@ -52,6 +56,12 @@ export function parseActions(raw: string): AgentAction[] {
   }
   for (const m of raw.matchAll(MSG_RE)) {
     found.push({ index: m.index ?? 0, action: { kind: "message", text: (m[1] ?? "").trim() } });
+  }
+  for (const m of raw.matchAll(MODE_RE)) {
+    found.push({ index: m.index ?? 0, action: { kind: "mode", mode: (m[1] ?? "").toLowerCase() } });
+  }
+  for (const m of raw.matchAll(NAME_RE)) {
+    found.push({ index: m.index ?? 0, action: { kind: "name", name: (m[1] ?? "").trim() } });
   }
 
   if (found.length === 0) {
@@ -130,7 +140,20 @@ export function humanText(raw: string): string {
     .replace(EDIT_RE, "")
     .replace(DELETE_RE, "")
     .replace(PLAN_RE, "")
+    .replace(MODE_RE, "")
+    .replace(NAME_RE, "")
     .replace(/<\/?lov-message>/g, "")
     .replace(/<lov-write[\s\S]*$/, "")
     .trim();
+}
+
+/** True when the model stopped mid-file / mid-response and should be asked to continue. */
+export function isTruncated(raw: string): boolean {
+  const open = raw.lastIndexOf("<lov-write");
+  const close = raw.lastIndexOf("</lov-write>");
+  if (open > close) return true;
+  const trimmed = raw.trimEnd();
+  if (!trimmed) return false;
+  const openEdit = trimmed.lastIndexOf("<lov-edit");
+  return openEdit > trimmed.lastIndexOf("</lov-edit>");
 }
