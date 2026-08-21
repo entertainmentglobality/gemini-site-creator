@@ -32,6 +32,26 @@ export const PREFERRED_MODELS = [
 /** Chain used before/if discovery is unavailable. */
 export const DEFAULT_CHAIN: string[] = [...PREFERRED_MODELS];
 
+/** Lowest-latency models first — used by Fast mode. */
+export const FAST_PREFERENCE = [
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-2.5-flash-lite",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-2.5-flash",
+];
+
+/** Reorders a discovered chain for the requested speed mode. */
+export function chainFor(speed: "fast" | "pro", models: string[]): string[] {
+  const available = models.length ? models : DEFAULT_CHAIN;
+  if (speed !== "fast") return available;
+  const fast = FAST_PREFERENCE.filter((m) => available.includes(m));
+  const rest = available.filter((m) => !fast.includes(m));
+  return [...(fast.length ? fast : FAST_PREFERENCE), ...rest];
+}
+
 const EXCLUDE = /(embedding|aqa|tts|image|audio|live|robotics|computer-use|veo|imagen|lyria)/i;
 
 function score(id: string): number {
