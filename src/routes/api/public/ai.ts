@@ -27,6 +27,7 @@ export const Route = createFileRoute("/api/public/ai")({
           system?: string;
           messages?: { role: string; content: string }[];
           model?: string;
+          max_tokens?: number;
           temperature?: number;
         };
         try {
@@ -46,6 +47,19 @@ export const Route = createFileRoute("/api/public/ai")({
           });
         }
 
+        const ALLOWED = [
+          "google/gemini-3.7-flash",
+          "google/gemini-3.6-flash",
+          "google/gemini-3.5-flash",
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3-flash-preview",
+          "google/gemini-2.5-flash",
+        ];
+        const model =
+          payload.model && ALLOWED.includes(payload.model)
+            ? payload.model
+            : "google/gemini-3.7-flash";
+
         const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -53,10 +67,11 @@ export const Route = createFileRoute("/api/public/ai")({
             authorization: `Bearer ${key}`,
           },
           body: JSON.stringify({
-            model: payload.model ?? "google/gemini-3.6-flash",
+            model,
+
             stream: true,
             temperature: payload.temperature ?? 0.8,
-            max_tokens: 24000,
+            max_tokens: Math.min(Math.max(Number(payload.max_tokens) || 24000, 1000), 32000),
             messages: [
               ...(payload.system ? [{ role: "system", content: payload.system }] : []),
               ...messages.map((m) => ({

@@ -1,5 +1,5 @@
 import { streamBackend } from "./backend";
-import { GeminiError, streamGemini, type GeminiTurn } from "./gemini";
+import { GeminiError, chainFor, streamGemini, type GeminiTurn } from "./gemini";
 import {
   ENHANCER_PROMPT,
   classifyMode,
@@ -7,9 +7,27 @@ import {
   resolveMode,
   systemPrompt,
   type BuildMode,
+  type Speed,
 } from "./prompt";
 import { humanText, isTruncated, parseActions, streamingWrites, streamProgress } from "./protocol";
 import { uid, useBuilder } from "./store";
+
+/** Per-speed tuning: model, creativity and output budget. */
+const TUNING: Record<Speed, { model: string; temperature: number; maxTokens: number; retries: number }> =
+  {
+    fast: {
+      model: "google/gemini-3.1-flash-lite",
+      temperature: 0.7,
+      maxTokens: 8000,
+      retries: 0,
+    },
+    pro: {
+      model: "google/gemini-3.7-flash",
+      temperature: 0.9,
+      maxTokens: 32000,
+      retries: 3,
+    },
+  };
 
 function friendlyError(error: unknown) {
   if (error instanceof GeminiError) {
@@ -49,12 +67,26 @@ interface StreamArgs {
 /** Routes a completion to the free Atlas backend or the user's own Gemini key. */
 async function stream(args: StreamArgs) {
   const state = useBuilder.getState();
+  const tune = TUNING[state.speed] ?? TUNING.pro;
   if (state.provider === "atlas") {
-    return streamBackend({ base: state.backendUrl, ...args });
+    return streamBackend({
+      base: state.backendUrl,
+      model: tune.model,
+      maxTokens: tune.maxTokens,
+      ...args,
+      temperature: args.temperature ?? tune.temperature,
+    });
   }
   if (!state.apiKey) throw new Error("Add your Gemini API key first, or switch to Atlas AI.");
-  return streamGemini({ apiKey: state.apiKey, models: state.models, ...args });
+  return streamGemini({
+    apiKey: state.apiKey,
+    ...args,
+    models: chainFor(state.speed, state.models),
+    temperature: args.temperature ?? tune.temperature,
+    maxOutputTokens: tune.maxTokens,
+  });
 }
+
 
 export interface RunOptions {
   instruction: string;

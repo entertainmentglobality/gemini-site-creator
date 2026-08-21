@@ -33,6 +33,8 @@ export async function backendAvailable(base: string) {
 export async function streamBackend(args: {
   base: string;
   system: string;
+  model?: string | undefined;
+  maxTokens?: number | undefined;
   history: GeminiTurn[];
   signal?: AbortSignal | undefined;
   temperature?: number | undefined;
@@ -44,6 +46,8 @@ export async function streamBackend(args: {
     signal: args.signal ?? null,
     body: JSON.stringify({
       system: args.system,
+      model: args.model,
+      max_tokens: args.maxTokens,
       temperature: args.temperature,
       messages: args.history.map((t) => ({
         role: t.role === "model" ? "assistant" : "user",

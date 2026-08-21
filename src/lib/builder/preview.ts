@@ -115,7 +115,7 @@ export function buildPreview(
   page = "index.html",
 ): string {
   if (Object.keys(files).length === 0) return EMPTY;
-  if (mode === "react") return REACT_RUNTIME(files);
+  if (mode === "react" || mode === "fullstack") return REACT_RUNTIME(files);
   const html = files[page] ?? files["index.html"] ?? Object.values(files)[0];
   if (!html) return EMPTY;
   return injectInto(inlineAssets(html, files));
