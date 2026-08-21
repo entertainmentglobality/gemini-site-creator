@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { BuildMode } from "./prompt";
+import type { BuildMode, Speed } from "./prompt";
 import type { AgentAction } from "./protocol";
 
 export interface ChatMessage {
@@ -38,6 +38,7 @@ export type PublishTarget = "hub" | "repo";
 interface BuilderState {
   onboarded: boolean;
   provider: Provider;
+  speed: Speed;
   backendUrl: string;
   publishTarget: PublishTarget;
   hubDomain: string;
@@ -52,6 +53,7 @@ interface BuilderState {
 
   setOnboarded: (v: boolean) => void;
   setProvider: (provider: Provider) => void;
+  setSpeed: (speed: Speed) => void;
   setBackendUrl: (url: string) => void;
   setPublishTarget: (target: PublishTarget) => void;
   setHubDomain: (domain: string) => void;
@@ -93,6 +95,7 @@ export const useBuilder = create<BuilderState>()(
     (set, get) => ({
       onboarded: false,
       provider: "atlas",
+      speed: "pro",
       backendUrl: "",
       publishTarget: "hub",
       hubDomain: "",
@@ -107,6 +110,7 @@ export const useBuilder = create<BuilderState>()(
 
       setOnboarded: (onboarded) => set({ onboarded }),
       setProvider: (provider) => set({ provider }),
+      setSpeed: (speed) => set({ speed }),
       setBackendUrl: (backendUrl) => set({ backendUrl }),
       setPublishTarget: (publishTarget) => set({ publishTarget }),
       setHubDomain: (hubDomain) => set({ hubDomain }),
@@ -230,6 +234,7 @@ export const useBuilder = create<BuilderState>()(
       partialize: (s) => ({
         onboarded: s.onboarded,
         provider: s.provider,
+        speed: s.speed,
         backendUrl: s.backendUrl,
         publishTarget: s.publishTarget,
         hubDomain: s.hubDomain,
